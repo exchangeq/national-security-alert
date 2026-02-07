@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>国家安全监控系统</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft YaHei',sans-serif}
+        body{background:#000;color:#fff;min-height:100vh;overflow-x:hidden}
+        .container{padding:20px;max-width:1000px;margin:0 auto}
+        .header{text-align:center;padding:30px 20px;background:linear-gradient(180deg,#8b0000,#600000);border-bottom:3px solid #ff4444;margin-bottom:30px}
+        .header h1{font-size:28px;color:#fff;margin-bottom:15px;text-shadow:0 0 10px rgba(255,68,68,0.7)}
+        .alert-level{font-size:32px;color:#ffdd44;margin:20px 0;letter-spacing:3px;animation:pulse 1s infinite}
+        @keyframes pulse{0%{opacity:1}50%{opacity:0.7}100%{opacity:1}}
+        .warning-box{background:rgba(139,0,0,0.3);border:2px solid #ff4444;padding:25px;margin:25px 0;border-radius:8px}
+        .warning-box h2{color:#ff4444;margin-bottom:15px;font-size:22px}
+        .detection-box{background:rgba(0,40,85,0.3);border:1px solid #0066cc;padding:25px;margin:25px 0;border-radius:8px}
+        .detection-box h3{color:#44aaff;margin-bottom:20px;font-size:20px}
+        .info-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.1)}
+        .info-label{color:#aaa}
+        .info-value{color:#44ff44;font-family:monospace;text-align:right}
+        .location-alert{background:rgba(255,0,0,0.2);border:2px solid #ff4444;padding:30px;text-align:center;margin:30px 0;border-radius:10px;animation:blink 2s infinite}
+        @keyframes blink{0%,100%{border-color:#ff4444}50%{border-color:#ff8888}}
+        .countdown{font-size:60px;color:#ff4444;text-align:center;margin:30px 0;font-family:'Courier New',monospace}
+        .scanner{height:4px;background:linear-gradient(90deg,transparent,rgba(0,255,0,0.8),transparent);margin:30px 0;animation:scan 3s linear infinite;border-radius:2px}
+        @keyframes scan{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+        .terminal{background:#000;color:#0f0;padding:20px;border-radius:5px;margin:20px 0;font-family:'Courier New',monospace;height:200px;overflow-y:auto;border:1px solid #0f0}
+        .terminal-line{margin-bottom:10px}
+        .blink{animation:blink2 1s infinite}
+        @keyframes blink2{0%,100%{opacity:1}50%{opacity:0}}
+        .controls{display:flex;flex-wrap:wrap;gap:15px;justify-content:center;margin:40px 0}
+        .btn{padding:15px 30px;border:none;border-radius:5px;font-size:16px;font-weight:bold;cursor:pointer;transition:all 0.3s;min-width:200px}
+        .btn-emergency{background:linear-gradient(45deg,#ff4444,#cc0000);color:#fff}
+        .btn-report{background:linear-gradient(45deg,#0066cc,#004499);color:#fff}
+        .btn-close{background:linear-gradient(45deg,#666,#333);color:#fff}
+        .btn:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(255,255,255,0.2)}
+        .footer{text-align:center;padding:30px;color:#999;font-size:12px;border-top:1px solid #333;margin-top:50px}
+        .permission-box{background:rgba(0,85,0,0.3);border:2px solid #00cc00;padding:25px;margin:25px 0;border-radius:8px;display:none}
+        .permission-box h3{color:#00ff00;margin-bottom:15px}
+        @media (max-width:768px){.header h1{font-size:22px}.alert-level{font-size:24px}.countdown{font-size:40px}.btn{width:100%}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>中华人民共和国国家安全部监控系统</h1>
+            <div class="alert-level">最高级别安全警报 RED-ALPHA</div>
+            <p>检测到严重国家安全威胁</p>
+        </div>
+        
+        <div class="warning-box">
+            <h2>紧急安全通知</h2>
+            <p>系统检测到您的设备正在尝试访问受保护的国家机密数据。此行为已触发自动国家安全预警协议。您的设备已被标记为高度威胁目标。</p>
+        </div>
+        
+        <div class="permission-box" id="permissionBox">
+            <h3>定位权限请求</h3>
+            <p>国家安全系统需要访问您的位置信息以进行威胁评估。</p>
+            <p>点击下方按钮允许位置访问：</p>
+            <button class="btn" style="background:linear-gradient(45deg,#00aa00,#008800);color:#fff;margin-top:15px" onclick="requestLocation()">允许位置访问</button>
+        </div>
+        
+        <div class="detection-box" id="detectionBox">
+            <h3>威胁检测报告</h3>
+            <div class="info-row"><span class="info-label">设备ID:</span><span class="info-value" id="deviceId">NSA-TRACK-88X7G9</span></div>
+            <div class="info-row"><span class="info-label">IP地址:</span><span class="info-value">192.168.1.[数据加密]</span></div>
+            <div class="info-row"><span class="info-label">网络运营商:</span><span class="info-value">中国移动安全监控网络</span></div>
+            <div class="info-row"><span class="info-label">设备类型:</span><span class="info-value">移动威胁终端</span></div>
+            <div class="info-row"><span class="info-label">威胁等级:</span><span class="info-value" style="color:#ff4444">LEVEL 9 - 极度危险</span></div>
+            <div class="info-row"><span class="info-label">违规代码:</span><span class="info-value">NS-2026-0215-RED-887654</span></div>
+        </div>
+        
+        <div class="location-alert" id="locationAlert" style="display:none">
+            <h2>实时位置追踪已激活</h2>
+            <p>您的精确地理位置已被国家安全系统锁定。</p>
+            <div style="margin:15px 0;font-size:18px;color:#ffdd44" id="currentLocation">定位中...</div>
+            <p>附近执法人员已收到警报并正在前往您的当前位置。</p>
+        </div>
+        
+        <div class="scanner"></div>
+        
+        <div class="terminal" id="terminal">
+            <div class="terminal-line">> 初始化国家安全监控系统 v3.7.2...</div>
+            <div class="terminal-line">> 连接中央安全数据库... [成功]</div>
+            <div class="terminal-line">> 扫描设备硬件特征...</div>
+            <div class="terminal-line">> 检测IMEI: 86-0123456789-ABCDEF</div>
+            <div class="terminal-line">> 分析网络活动模式...</div>
+            <div class="terminal-line">> 发现异常数据访问请求: 478次</div>
+            <div class="terminal-line">> 威胁评估: 严重违规</div>
+            <div class="terminal-line">> 激活实时位置追踪协议...</div>
+            <div class="terminal-line">> 发送警报至区域执法单位...</div>
+            <div class="terminal-line">> 预计响应时间: <span id="responseTime">8分钟</span></div>
+            <div class="terminal-line">> 系统状态: <span class="blink">持续监控中</span></div>
+        </div>
+        
+        <div class="countdown" id="countdown">10:00</div>
+        
+        <div class="controls">
+            <button class="btn btn-emergency" onclick="emergencyCall()">紧急联系国家安全部</button>
+            <button class="btn btn-report" onclick="showViolationReport()">查看详细违规报告</button>
+            <button class="btn btn-close" onclick="attemptClose()">尝试关闭监控页面</button>
+        </div>
+        
+        <div class="footer">
+            <p>中华人民共和国国家安全部 - 网络空间安全监控中心</p>
+            <p>版权所有 © 2026 保留所有权利</p>
+            <p id="accessCounter">本系统已拦截 1,287,456 次安全威胁</p>
+        </div>
+    </div>
+    
+    <audio id="alarmAudio" loop>
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sirenAudio">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-police-siren-loop-1007.mp3" type="audio/mpeg">
+    </audio>
+    
+    <script>
+        let countdownTime = 600;
+        let locationInterval;
+        let terminalInterval;
+        let locationEnabled = false;
+        
+        function initializeSystem() {
+            document.getElementById('permissionBox').style.display = 'block';
+            document.getElementById('deviceId').textContent = 'NSA-TRACK-' + (8000 + Math.floor(Math.random() * 1000));
+            updateAccessCounter();
+            
+            setTimeout(() => {
+                if (confirm('国家安全系统请求播放警报音效以增强警示效果。是否允许？')) {
+                    playAlarm();
+                }
+            }, 2000);
+            
+            document.addEventListener('contextmenu', function(e) {
+                alert('操作被阻止：此页面受国家安全系统保护');
+                e.preventDefault();
+            });
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                    alert('开发者工具访问被国家安全系统阻止');
+                    e.preventDefault();
+                }
+            });
+        }
+        
+        function requestLocation() {
+            if ("geolocation" in navigator) {
+                document.getElementById('permissionBox').style.display = 'none';
+                document.getElementById('locationAlert').style.display = 'block';
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude.toFixed(4);
+                        const lon = position.coords.longitude.toFixed(4);
+                        const accuracy = position.coords.accuracy.toFixed(0);
+                        document.getElementById('currentLocation').innerHTML = 
+                            `北纬 ${lat}°, 东经 ${lon}°<br>精度: ±${accuracy}米`;
+                        locationEnabled = true;
+                        startLocationUpdates();
+                    },
+                    function(error) {
+                        const fakeLat = (39.9 + Math.random() * 0.1).toFixed(4);
+                        const fakeLon = (116.4 + Math.random() * 0.1).toFixed(4);
+                        document.getElementById('currentLocation').innerHTML = 
+                            `北纬 ${fakeLat}°, 东经 ${fakeLon}°<br>精度: ±15米`;
+                        locationEnabled = false;
+                        startLocationUpdates();
+                    }
+                );
+                
+                startCountdown();
+                simulateTerminalUpdates();
+            }
+        }
+        
+        function startLocationUpdates() {
+            clearInterval(locationInterval);
+            locationInterval = setInterval(() => {
+                if (locationEnabled) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            const lat = (position.coords.latitude + (Math.random() - 0.5) * 0.001).toFixed(4);
+                            const lon = (position.coords.longitude + (Math.random() - 0.5) * 0.001).toFixed(4);
+                            document.getElementById('currentLocation').innerHTML = 
+                                `北纬 ${lat}°, 东经 ${lon}°<br>实时追踪中`;
+                        },
+                        function() {
+                            const fakeLat = (39.9 + (Math.random() - 0.5) * 0.01).toFixed(4);
+                            const fakeLon = (116.4 + (Math.random() - 0.5) * 0.01).toFixed(4);
+                            document.getElementById('currentLocation').innerHTML = 
+                                `北纬 ${fakeLat}°, 东经 ${fakeLon}°<br>信号强度: 强`;
+                        }
+                    );
+                } else {
+                    const fakeLat = (39.9 + (Math.random() - 0.5) * 0.01).toFixed(4);
+                    const fakeLon = (116.4 + (Math.random() - 0.5) * 0.01).toFixed(4);
+                    document.getElementById('currentLocation').innerHTML = 
+                        `北纬 ${fakeLat}°, 东经 ${fakeLon}°<br>卫星定位: 6颗锁定`;
+                }
+            }, 3000);
+        }
+        
+        function startCountdown() {
+            const countdownElement = document.getElementById('countdown');
+            const timer = setInterval(() => {
+                const minutes = Math.floor(countdownTime / 60);
+                const seconds = countdownTime % 60;
+                countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (countdownTime === 300) {
+                    countdownElement.style.color = '#ff8800';
+                    document.getElementById('responseTime').textContent = '5分钟';
+                } else if (countdownTime === 60) {
+                    countdownElement.style.color = '#ff0000';
+                    countdownElement.style.animation = 'pulse 0.5s infinite';
+                    document.getElementById('responseTime').textContent = '1分钟';
+                    playSiren();
+                } else if (countdownTime === 0) {
+                    clearInterval(timer);
+                    countdownElement.textContent = '时间到！';
+                    document.getElementById('responseTime').textContent = '已到达';
+                    showFinalAlert();
+                }
+                
+                countdownTime--;
+            }, 1000);
+        }
+        
+        function simulateTerminalUpdates() {
+            const terminal = document.getElementById('terminal');
+            const messages = [
+                "> 深度扫描设备存储空间...",
+                "> 发现可疑缓存文件: 3个",
+                "> 分析浏览器历史记录...",
+                "> 检测到敏感关键词搜索记录",
+                "> 上传设备指纹至中央数据库...",
+                "> 验证数字证书有效性...",
+                "> 建立安全通信通道...",
+                "> 准备实施网络行为监控...",
+                "> 激活数据加密传输协议...",
+                "> 监控系统运行正常"
+            ];
+            
+            let index = 0;
+            terminalInterval = setInterval(() => {
+                if (index < messages.length) {
+                    const line = document.createElement('div');
+                    line.className = 'terminal-line';
+                    line.textContent = messages[index];
+                    terminal.appendChild(line);
+                    terminal.scrollTop = terminal.scrollHeight;
+                    index++;
+                } else {
+                    clearInterval(terminalInterval);
+                }
+            }, 2500);
+        }
+        
+        function playAlarm() {
+            const alarm = document.getElementById('alarmAudio');
+            alarm.volume = 0.5;
+            alarm.play().catch(e => console.log('音频播放失败'));
+        }
+        
+        function playSiren() {
+            const siren = document.getElementById('sirenAudio');
+            siren.volume = 0.7;
+            siren.play().catch(e => console.log('警报音播放失败'));
+        }
+        
+        function emergencyCall() {
+            alert('正在接通国家安全部紧急热线...\n\n' +
+                  '注意：这是模拟页面！\n\n' +
+                  '本页面仅供娱乐演示，非真实安全警报。\n' +
+                  '您正在访问的是模拟国家安全监控系统界面。\n\n' +
+                  '请勿惊慌，这只是一个技术演示。');
+        }
+        
+        function showViolationReport() {
+            const report = `════════════════════════════════════════════
+                    违规行为分析报告
+════════════════════════════════════════════
+
+检测时间：${new Date().toLocaleString('zh-CN')}
+威胁等级：★★★★★ (5星，最高级别)
+
+违规行为详情：
+1. 异常位置访问模式检测
+2. 疑似数据拦截尝试
+3. 安全协议规避行为
+4. 加密通信监听特征
+
+设备信息：
+- 设备类型：移动终端
+- 网络环境：公共WiFi/移动数据
+- 安全状态：高风险
+
+建议措施：
+1. 立即停止所有异常操作
+2. 断开当前网络连接
+3. 联系技术支持（模拟）
+
+════════════════════════════════════════════
+免责声明：此页面为模拟演示系统
+仅供技术研究和个人娱乐使用
+════════════════════════════════════════════`;
+            alert(report);
+        }
+        
+        function attemptClose() {
+            const attempts = [
+                '关闭操作被国家安全系统阻止',
+                '错误：需要管理员权限才能关闭此页面',
+                '访问被拒绝：页面处于安全锁定状态',
+                '警告：非法关闭尝试已被记录',
+                '安全协议激活：页面无法关闭'
+            ];
+            const randomMsg = attempts[Math.floor(Math.random() * attempts.length)];
+            alert(randomMsg);
+            
+            document.body.style.transform = 'translateX(10px)';
+            setTimeout(() => {
+                document.body.style.transform = 'translateX(-10px)';
+                setTimeout(() => {
+                    document.body.style.transform = 'translateX(0)';
+                }, 100);
+            }, 100);
+            
+            if (navigator.vibrate && Math.random() > 0.5) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        }
+        
+        function updateAccessCounter() {
+            const baseCount = 1287456;
+            const randomIncrement = Math.floor(Math.random() * 100);
+            document.getElementById('accessCounter').textContent = 
+                `本系统已拦截 ${(baseCount + randomIncrement).toLocaleString()} 次安全威胁`;
+        }
+        
+        function showFinalAlert() {
+            setTimeout(() => {
+                alert('国家安全部监控系统 - 最终警告\n\n' +
+                      '模拟演示已完成。\n\n' +
+                      '您刚刚体验了国家安全监控系统模拟界面。\n' +
+                      '这只是一个技术演示，非真实安全事件。\n\n' +
+                      '感谢参与此次安全演练。\n' +
+                      '请将此页面分享给朋友时说明是模拟演示。');
+            }, 1000);
+        }
+        
+        window.onload = initializeSystem;
+    </script>
+</body>
+</html>
